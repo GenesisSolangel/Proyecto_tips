@@ -63,10 +63,16 @@ def main():
         st.dataframe(df)
 
     # Agregar un gráfico con df filtrado
-    fig_bar = px.bar(data_frame=df["sex"].value_counts().to_frame().reset_index(),
-                     x="sex",
-                     y="count",
-                     title="Beneficiarios por sexo")
+
+    df_sex_counts = df["sex"].value_counts().reset_index()
+    df_sex_counts.columns = ["sex", "count"]
+
+    fig_bar = px.bar(
+        data_frame=df_sex_counts,
+        x="sex",
+        y="count",
+        title="Beneficiarios por sexo"
+    )
     st.plotly_chart(figure_or_data=fig_bar, use_container_width=True)
 
 
