@@ -2,10 +2,36 @@ import streamlit as st
 import pandas as pd
 import re
 import seaborn as sns
-from textblob import TextBlob
 import plotly.express as px
-from PIL import Image
-from modules.the_office_func import *
+import pandas as pd
+import pickle
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+df = sns.load_dataset("tips")
+
+X = df[["total_bill", "size"]]
+y = df[["tip"]]
+
+X_scaler = StandardScaler()
+y_scaler = StandardScaler()
+
+X_scaled = X_scaler.fit_transform(X)
+y_scaled = y_scaler.fit_transform(y)
+
+model = LinearRegression()
+model.fit(X_scaled, y_scaled)
+
+# Guarda el modelo y los escaladores
+with open("tip_model.pkl", "wb") as f:
+    pickle.dump(model, f)
+
+with open("X_scaler.pkl", "wb") as f:
+    pickle.dump(X_scaler, f)
+
+with open("y_scaler.pkl", "wb") as f:
+    pickle.dump(y_scaler, f)
 
 st.set_page_config(page_title = "Tips",
                    layout     = "centered")
@@ -86,6 +112,47 @@ def main():
                             title="Distribución del total de cuentas")
     st.plotly_chart(figure_or_data=fig_hist2, use_container_width=True)
 
+    st.markdown("## Predicción de propina")
 
+    st.markdown("Ingresa los siguientes valores para predecir la propina estimada:")
+
+    # Inputs del usuario
+    col1, col2 = st.columns(2)
+    with col1:
+        total_bill = st.number_input("Total de la cuenta ($)", min_value=0.0, step=1.0)
+    with col2:
+        size = st.number_input("Tamaño del grupo", min_value=1, step=1)
+
+    # Botón para predecir
+    if st.button("Predecir propina"):
+        import numpy as np
+        import pickle
+
+        # Cargar modelo y escaladores
+        with open("tip_model.pkl", "rb") as f:
+            model = pickle.load(f)
+        with open("X_scaler.pkl", "rb") as f:
+            X_scaler = pickle.load(f)
+        with open("y_scaler.pkl", "rb") as f:
+            y_scaler = pickle.load(f)
+
+        # Crear input y escalar
+        data = np.array([total_bill, size]).reshape(1, -1)
+        data_scaled = X_scaler.transform(data)
+
+        # Predicción
+        prediction_scaled = model.predict(data_scaled)
+        prediction = y_scaler.inverse_transform(prediction_scaled.reshape(-1, 1))
+
+        # Mostrar resultados
+        df_pred = pd.DataFrame(data=data, columns=["total_bill", "size"])
+        df_pred["Predicted Tip ($)"] = prediction
+
+        col1, col2 = st.columns(2)
+        col1.markdown("**Datos del usuario:**")
+        col1.dataframe(df_pred[["total_bill", "size"]])
+
+        col2.markdown("**Propina estimada:**")
+        col2.dataframe(df_pred[["Predicted Tip ($)"]])
 if __name__ == "__main__":
     main()
