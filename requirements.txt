@@ -11,4 +11,3 @@ streamlit-folium
 streamlit_folium
 textblob
 scikit-learn
-pickle
